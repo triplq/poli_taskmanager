@@ -6,44 +6,50 @@
 #include <string>
 
 class Task {
-private:
+protected:
 	std::string text;
 
 public:
 	explicit Task(const std::string& n_text) : text(n_text) { }
 
-	Task(const Task& other) : text(other.text) { }
+	virtual std::string to_string() const = 0;
 
 	const std::string& get_text() const {
 		return text;
 	}
 
-	std::string to_string() const {
+	virtual ~Task() = default;
+};
+
+class SimpleTask : public Task{
+public:
+	// using Task::Task;
+	SimpleTask(const std::string& n_text) : Task(n_text) { }
+
+	std::string to_string() const override {
 		return "Task: " + text;
 	}
 };
 
-class DeadlineTask : private Task {
+class DeadlineTask : public Task {
 private:
 	std::time_t deadline;
 
 public:
 	DeadlineTask(const std::string& n_text, time_t n_deadline) : Task(n_text), deadline(n_deadline) { };
 
-	DeadlineTask(const DeadlineTask& other) : Task(other.get_text()), deadline(other.deadline) { }
-
 	time_t get_deadline() const {
 		return deadline;
 	}
 
-	std::string to_string() const {
+	std::string to_string() const override {
 		std::time_t local_deadline = deadline;
 		std::tm tm_deadline = *std::localtime(&local_deadline);
 
 		char buffer[32];
 		std::strftime(buffer, sizeof(buffer), "%d.%m.%Y %H:%M", &tm_deadline);
 
-		return Task::to_string() + " Expires at: " + std::string(buffer);
+		return "Task: " + text + " Expires at: " + std::string(buffer);
 	}
 
 	bool is_expired() const {
@@ -51,7 +57,7 @@ public:
 	}
 };
 
-class ReccuringTask : private Task {
+class ReccuringTask : public Task {
 private:
 	std::time_t recure;
 	std::time_t last_complete_day;
@@ -65,8 +71,6 @@ public:
 		last_complete_day = n_last_complete_day;
 	}
 
-	ReccuringTask(const ReccuringTask& other) : Task(other.get_text()), recure(other.recure), last_complete_day(other.last_complete_day) { }
-
 	time_t get_recure() const {
 		return recure;
 	}
@@ -75,7 +79,7 @@ public:
 		return last_complete_day;
 	}
 
-	std::string to_string() const {
+	std::string to_string() const override {
 		std::time_t local_lcd = last_complete_day;
 		std::tm tm_lcd = *std::localtime(&local_lcd);
 
@@ -88,18 +92,18 @@ public:
 		char buffer_recure[32];
 		std::strftime(buffer_recure, sizeof(buffer_recure), "%d.%m.%Y %H:%M", &tm_recure);
 
-		return Task::to_string() + " Reccuring every " + std::string(buffer_recure) + " And were last complete: " + std::string(buffer_lcd);
+		return "Task: " + text + " Reccuring every " + std::string(buffer_recure) + " And were last complete: " + std::string(buffer_lcd);
 	}
 
 	bool is_expired() const {
 		std::time_t now = std::time(nullptr);
 
-		return (now > last_complete_day + recure);
+		return (now >= last_complete_day + recure);
 	}
 };
 
 int main() {
-	Task task("Work");
+	SimpleTask task("Work");
 
 	std::time_t deadline = std::time(nullptr) + (86400 * 5); //5 days
 	DeadlineTask task_with_deadline("Call",deadline);
@@ -108,10 +112,10 @@ int main() {
 	std::time_t last_complete_day = std::time(nullptr) - (86400 * 9);
 	ReccuringTask task_with_recure("Drink", recure, last_complete_day);
 
-	std::cout << "============TESTING TASK============\n";
+	std::cout << "============TESTING SIMPLETASK============\n";
 	std::cout << task.get_text() << ' ' << task.to_string() << '\n';
 
-	Task task2 = task;
+	SimpleTask task2 = task;
 
 	std::cout << task2.get_text() << ' ' << task2.to_string() << '\n';
 
