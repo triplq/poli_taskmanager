@@ -11,6 +11,7 @@ protected:
 	std::string text;
 
 public:
+	Task() { }
 	explicit Task(const std::string& n_text) : text(n_text) { }
 
 	virtual std::string to_string() const = 0;
@@ -19,16 +20,22 @@ public:
 		return text;
 	}
 
+	virtual Task* clone() const = 0;
+
 	virtual ~Task() = default;
 };
 
 class SimpleTask : public Task{
 public:
-	// using Task::Task;
+	SimpleTask() { }
 	SimpleTask(const std::string& n_text) : Task(n_text) { }
 
 	std::string to_string() const override {
 		return "Task: " + text;
+	}
+
+	SimpleTask* clone() const override {
+		return new SimpleTask(*this);
 	}
 };
 
@@ -37,7 +44,8 @@ private:
 	std::time_t deadline;
 
 public:
-	DeadlineTask(const std::string& n_text, time_t n_deadline) : Task(n_text), deadline(n_deadline) { };
+	DeadlineTask() { }
+	DeadlineTask(const std::string& n_text, time_t n_deadline) : Task(n_text), deadline(n_deadline) { }
 
 	time_t get_deadline() const {
 		return deadline;
@@ -53,6 +61,10 @@ public:
 		return "Task: " + text + " Expires at: " + std::string(buffer);
 	}
 
+	DeadlineTask* clone() const override {
+		return new DeadlineTask();
+	}
+
 	bool is_expired() const {
 		return (std::time(nullptr) >= deadline);
 	}
@@ -64,6 +76,7 @@ private:
 	std::time_t last_complete_day;
 
 public:
+	ReccuringTask() { }
 	ReccuringTask(const std::string& n_text, time_t n_recure, time_t n_last_complete_day) : Task(n_text) {
 		if(n_recure < 86400){
 			throw std::invalid_argument("Quantity of days can't be zero in reccuring task");
@@ -94,6 +107,10 @@ public:
 		std::strftime(buffer_recure, sizeof(buffer_recure), "%d.%m.%Y %H:%M", &tm_recure);
 
 		return "Task: " + text + " Reccuring every " + std::string(buffer_recure) + " And were last complete: " + std::string(buffer_lcd);
+	}
+
+	ReccuringTask* clone() const override {
+		return new ReccuringTask();
 	}
 
 	bool is_expired() const {
@@ -150,7 +167,7 @@ public:
 	TaskManager(const TaskManager& other) : capacity(other.capacity), size(other.size) {
 		tasks = new Task*[capacity];
 		for (size_t i = 0; i < size; i++) {
-			tasks[i] = new Task
+			tasks[i] = other.tasks[i]->clone();
 		}
 	}
 
