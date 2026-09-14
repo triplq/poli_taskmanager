@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <iostream>
 #include <ctime>
 #include <chrono>
@@ -99,6 +100,75 @@ public:
 		std::time_t now = std::time(nullptr);
 
 		return (now >= last_complete_day + recure);
+	}
+};
+
+class TaskManager {
+private:
+	size_t capacity;
+	size_t size;
+	Task** tasks;
+
+	void increase_capacity() {
+		Task** new_tasks = new Task*[capacity*2];
+		for (size_t i = 0; i < size; i++){
+			new_tasks[i] = tasks[i];
+		}
+		capacity *= 2;
+		delete[] tasks;
+		tasks = new_tasks;
+	}
+
+public:
+	TaskManager() : capacity(1), size(0), tasks(new Task*[capacity]) { };
+	TaskManager(size_t n_capacity) {
+		if (n_capacity == 0) {
+			throw std::invalid_argument("Capacity can't be zero");
+		}
+		capacity = n_capacity;
+		size = 0;
+		tasks = new Task*[capacity];
+	}
+
+	TaskManager& operator=(const TaskManager& other) {
+		if (this != &other) {
+			Task** n_tasks = new Task*[other.capacity];
+			for (size_t i = 0; i < other.size; i++) {
+				n_tasks[i] = other.tasks[i];
+			}
+			capacity = other.capacity;
+			size = other.size;
+
+			delete[] tasks;
+			tasks = n_tasks;
+			n_tasks = nullptr;
+		}
+
+		return *this;
+	}
+
+	TaskManager(const TaskManager& other) : capacity(other.capacity), size(other.size) {
+		tasks = new Task*[capacity];
+		for (size_t i = 0; i < size; i++) {
+			tasks[i] = new Task
+		}
+	}
+
+	~TaskManager() {
+		for (size_t i = 0; i < size; i++) {
+			delete tasks[i];
+		}
+
+		delete[] tasks;
+	}
+
+	void push_back(Task* n_task) {
+		if (size == capacity){
+			increase_capacity();
+		}
+		tasks[size] = n_task;
+		n_task = nullptr;
+		size++;
 	}
 };
 
