@@ -1,8 +1,6 @@
 #include <cstddef>
 #include <iostream>
 #include <ctime>
-#include <chrono>
-#include <locale>
 #include <stdexcept>
 #include <string>
 
@@ -22,6 +20,8 @@ public:
 
 	virtual Task* clone() const = 0;
 
+	virtual bool is_expired() const = 0;
+
 	virtual ~Task() = default;
 };
 
@@ -36,6 +36,10 @@ public:
 
 	SimpleTask* clone() const override {
 		return new SimpleTask(*this);
+	}
+
+	bool is_expired() const override {
+		return false;
 	}
 };
 
@@ -65,7 +69,7 @@ public:
 		return new DeadlineTask();
 	}
 
-	bool is_expired() const {
+	bool is_expired() const override {
 		return (std::time(nullptr) >= deadline);
 	}
 };
@@ -113,7 +117,7 @@ public:
 		return new ReccuringTask();
 	}
 
-	bool is_expired() const {
+	bool is_expired() const override {
 		std::time_t now = std::time(nullptr);
 
 		return (now >= last_complete_day + recure);
@@ -179,6 +183,22 @@ public:
 		delete[] tasks;
 	}
 
+	const Task& operator[](size_t index) const {
+		if (index >= size) {
+			throw std::invalid_argument("Index can't be more or equal size");
+		}
+
+		return *tasks[index];
+	}
+
+	Task& operator[](size_t index) {
+		if (index >= size) {
+			throw std::invalid_argument("Index can't be more or equal size");
+		}
+
+		return *tasks[index];
+	}
+
 	void push_back(Task* n_task) {
 		if (size == capacity){
 			increase_capacity();
@@ -186,6 +206,22 @@ public:
 		tasks[size] = n_task;
 		n_task = nullptr;
 		size++;
+	}
+
+	void println() {
+		for (size_t i = 0; i < size; i++) {
+			std::cout << tasks[i]->to_string() << ' ';
+		}
+		std::cout << '\n';
+	}
+
+	void whats_expired() {
+		for (size_t i = 0; i < size; i++) {
+			if(tasks[i]->is_expired()){
+				std::cout << tasks[i]->to_string() << ' ';
+			}
+		}
+		std::cout << '\n';
 	}
 };
 
