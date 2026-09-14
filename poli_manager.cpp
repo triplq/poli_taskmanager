@@ -27,7 +27,6 @@ public:
 
 class SimpleTask : public Task{
 public:
-	SimpleTask() { }
 	SimpleTask(const std::string& n_text) : Task(n_text) { }
 
 	std::string to_string() const override {
@@ -48,8 +47,12 @@ private:
 	std::time_t deadline;
 
 public:
-	DeadlineTask() { }
-	DeadlineTask(const std::string& n_text, time_t n_deadline) : Task(n_text), deadline(n_deadline) { }
+	DeadlineTask(const std::string& n_text, time_t n_deadline) : Task(n_text) {
+		if(n_deadline <= std::time(nullptr)){
+			throw std::invalid_argument("Expiration date can't be today or in the past");
+		}
+		deadline = n_deadline;
+	}
 
 	time_t get_deadline() const {
 		return deadline;
@@ -66,7 +69,7 @@ public:
 	}
 
 	DeadlineTask* clone() const override {
-		return new DeadlineTask();
+		return new DeadlineTask(*this);
 	}
 
 	bool is_expired() const override {
@@ -80,7 +83,6 @@ private:
 	std::time_t last_complete_day;
 
 public:
-	ReccuringTask() { }
 	ReccuringTask(const std::string& n_text, time_t n_recure, time_t n_last_complete_day) : Task(n_text) {
 		if(n_recure < 86400){
 			throw std::invalid_argument("Quantity of days can't be zero in reccuring task");
@@ -114,7 +116,7 @@ public:
 	}
 
 	ReccuringTask* clone() const override {
-		return new ReccuringTask();
+		return new ReccuringTask(*this);
 	}
 
 	bool is_expired() const override {
@@ -138,6 +140,7 @@ private:
 		capacity *= 2;
 		delete[] tasks;
 		tasks = new_tasks;
+		new_tasks = nullptr;
 	}
 
 public:
@@ -155,7 +158,7 @@ public:
 		if (this != &other) {
 			Task** n_tasks = new Task*[other.capacity];
 			for (size_t i = 0; i < other.size; i++) {
-				n_tasks[i] = other.tasks[i];
+				n_tasks[i] = other.tasks[i]->clone();
 			}
 			capacity = other.capacity;
 			size = other.size;
@@ -199,7 +202,7 @@ public:
 		return *tasks[index];
 	}
 
-	void push_back(Task* n_task) {
+	void push_back(Task*& n_task) {
 		if (size == capacity){
 			increase_capacity();
 		}
