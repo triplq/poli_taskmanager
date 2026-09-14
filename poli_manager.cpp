@@ -1,4 +1,5 @@
 #include <cstddef>
+#include <cstdlib>
 #include <iostream>
 #include <ctime>
 #include <stdexcept>
@@ -47,12 +48,7 @@ private:
 	std::time_t deadline;
 
 public:
-	DeadlineTask(const std::string& n_text, time_t n_deadline) : Task(n_text) {
-		if(n_deadline <= std::time(nullptr)){
-			throw std::invalid_argument("Expiration date can't be today or in the past");
-		}
-		deadline = n_deadline;
-	}
+	DeadlineTask(const std::string& n_text, time_t n_deadline) : Task(n_text), deadline(n_deadline) { }
 
 	time_t get_deadline() const {
 		return deadline;
@@ -103,16 +99,21 @@ public:
 		std::time_t local_lcd = last_complete_day;
 		std::tm tm_lcd = *std::localtime(&local_lcd);
 
-		std::time_t local_recure = recure;
-		std::tm tm_recure = *std::localtime(&local_recure);
+		// std::time_t local_recure = recure;
+		// std::tm tm_recure = *std::localtime(&local_recure);
+
+		// tm_recure.tm_hour -= 3;
+		// tm_recure.tm_year -= 1970;
+		// tm_recure.tm_mon -= 1;
+		// tm_recure.tm_mday -=1; 
 
 		char buffer_lcd[32];
 		std::strftime(buffer_lcd, sizeof(buffer_lcd), "%d.%m.%Y %H:%M", &tm_lcd);
 
-		char buffer_recure[32];
-		std::strftime(buffer_recure, sizeof(buffer_recure), "%d.%m.%Y %H:%M", &tm_recure);
+		// char buffer_recure[32];
+		// std::strftime(buffer_recure, sizeof(buffer_recure), "%d.%m.%Y %H:%M", &tm_recure);
 
-		return "Task: " + text + " Reccuring every " + std::string(buffer_recure) + " And were last complete: " + std::string(buffer_lcd);
+		return "Task: " + text + " Reccuring every " + std::to_string(recure / 86400) + " days And were last complete: " + std::string(buffer_lcd);
 	}
 
 	ReccuringTask* clone() const override {
@@ -157,15 +158,26 @@ public:
 	TaskManager& operator=(const TaskManager& other) {
 		if (this != &other) {
 			Task** n_tasks = new Task*[other.capacity];
-			for (size_t i = 0; i < other.size; i++) {
-				n_tasks[i] = other.tasks[i]->clone();
+			size_t abs_index = 0;
+			try {
+				for (; abs_index < other.size; abs_index++) {
+					n_tasks[abs_index] = other.tasks[abs_index]->clone();
+				}
 			}
-			capacity = other.capacity;
-			size = other.size;
-
+			catch (...) {
+				for (size_t i = 0; i < abs_index; i++) {
+					delete n_tasks[i];
+				}
+				delete[] n_tasks;
+				throw;
+			}
+			for (size_t i = 0; i < size; i++){
+					delete tasks[i];
+				}
 			delete[] tasks;
+			size = other.size;
+			capacity = other.capacity;
 			tasks = n_tasks;
-			n_tasks = nullptr;
 		}
 
 		return *this;
@@ -173,8 +185,19 @@ public:
 
 	TaskManager(const TaskManager& other) : capacity(other.capacity), size(other.size) {
 		tasks = new Task*[capacity];
-		for (size_t i = 0; i < size; i++) {
-			tasks[i] = other.tasks[i]->clone();
+		size_t abs_index = 0;
+		try {
+			for (; abs_index < size; abs_index++) {
+				tasks[abs_index] = other.tasks[abs_index]->clone();
+			}
+		}
+		catch (...) {
+			for (size_t i = 0; i < abs_index; i++) {
+				delete tasks[i];
+			}
+			delete[] tasks;
+			tasks = nullptr;
+			throw;
 		}
 	}
 
@@ -202,23 +225,22 @@ public:
 		return *tasks[index];
 	}
 
-	void push_back(Task*& n_task) {
+	void push_back(const Task& n_task) {
 		if (size == capacity){
 			increase_capacity();
 		}
-		tasks[size] = n_task;
-		n_task = nullptr;
+		tasks[size] = n_task.clone();
 		size++;
 	}
 
-	void println() {
+	void println() const {
 		for (size_t i = 0; i < size; i++) {
 			std::cout << tasks[i]->to_string() << ' ';
 		}
 		std::cout << '\n';
 	}
 
-	void whats_expired() {
+	void whats_expired() const {
 		for (size_t i = 0; i < size; i++) {
 			if(tasks[i]->is_expired()){
 				std::cout << tasks[i]->to_string() << ' ';
@@ -226,30 +248,34 @@ public:
 		}
 		std::cout << '\n';
 	}
+
+	size_t get_size() const {
+		return size;
+	}
+
+	size_t get_capacity() const {
+		return capacity;
+	}
 };
 
 int main() {
-	SimpleTask task("Work");
+	Task* task = new SimpleTask("Work");
 
 	std::time_t deadline = std::time(nullptr) + (86400 * 5); //5 days
-	DeadlineTask task_with_deadline("Call",deadline);
+	Task* task_with_deadline = new DeadlineTask("Call",deadline);
 
 	std::time_t recure = 86400 * 7; //week
 	std::time_t last_complete_day = std::time(nullptr) - (86400 * 9);
 	ReccuringTask task_with_recure("Drink", recure, last_complete_day);
 
 	std::cout << "============TESTING SIMPLETASK============\n";
-	std::cout << task.get_text() << ' ' << task.to_string() << '\n';
+	std::cout << task->get_text() << ' ' << task->to_string() << '\n';
 
-	SimpleTask task2 = task;
+	// std::cout << "============TESTING DEADLINE============\n";
 
-	std::cout << task2.get_text() << ' ' << task2.to_string() << '\n';
-
-	std::cout << "============TESTING DEADLINE============\n";
-
-	std::time_t local_deadline = task_with_deadline.get_deadline();
-	std::tm tm_deadline = *std::localtime(&local_deadline);
-	std::cout << std::asctime(&tm_deadline) << " Is it expired? " << task_with_deadline.is_expired() << ' ' << task_with_deadline.to_string() << '\n';
+	// std::time_t local_deadline = task_with_deadline->get_deadline();
+	// std::tm tm_deadline = *std::localtime(&local_deadline);
+	// std::cout << std::asctime(&tm_deadline) << " Is it expired? " << task_with_deadline.is_expired() << ' ' << task_with_deadline.to_string() << '\n';
 
 	std::cout << "===============TESTING RECURE============\n";
 
@@ -259,6 +285,9 @@ int main() {
 	std::tm tm_lcd = *std::localtime(&local_lcd);
 
 	std::cout << asctime(&tm_recure) << task_with_recure.to_string() << " Is it expired? " << task_with_recure.is_expired() << ' ' << asctime(&tm_lcd);
+
+	// TaskManager tasks;
+	// tasks.push_back(task);
 
 
 	return 0;
