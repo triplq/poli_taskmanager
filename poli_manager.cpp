@@ -20,7 +20,7 @@ public:
 		return text;
 	}
 
-	virtual Task* clone() const = 0;
+	virtual std::unique_ptr<Task> clone() const = 0;
 
 	virtual bool is_expired() const = 0;
 
@@ -35,8 +35,8 @@ public:
 		return "Task: " + text;
 	}
 
-	SimpleTask* clone() const override {
-		return new SimpleTask(*this);
+	std::unique_ptr<Task> clone() const override {
+		return std::make_unique<SimpleTask>(*this);
 	}
 
 	bool is_expired() const override {
@@ -65,8 +65,8 @@ public:
 		return "Task: " + text + " Expires at: " + std::string(buffer);
 	}
 
-	DeadlineTask* clone() const override {
-		return new DeadlineTask(*this);
+	std::unique_ptr<Task> clone() const override {
+		return std::make_unique<DeadlineTask>(*this);
 	}
 
 	bool is_expired() const override {
@@ -81,7 +81,7 @@ private:
 
 public:
 	ReccuringTask(const std::string& n_text, time_t n_recure, time_t n_last_complete_day) : Task(n_text) {
-		if(n_recure < 86400){
+		if (n_recure < 86400) {
 			throw std::invalid_argument("Quantity of days can't be zero in reccuring task");
 		}
 		recure = n_recure;
@@ -106,8 +106,8 @@ public:
 		return "Task: " + text + " Reccuring every " + std::to_string(recure / 86400) + " days And were last complete: " + std::string(buffer_lcd);
 	}
 
-	ReccuringTask* clone() const override {
-		return new ReccuringTask(*this);
+	std::unique_ptr<Task> clone() const override {
+		return std::make_unique<ReccuringTask>(*this);
 	}
 
 	bool is_expired() const override {
@@ -121,52 +121,46 @@ class TaskManager {
 private:
 	size_t capacity;
 	size_t size;
-	Task** tasks;
+	std::unique_ptr<Task>* tasks;
 
 	void increase_capacity() {
-		Task** new_tasks = new Task*[capacity*2];
-		for (size_t i = 0; i < size; i++){
-			new_tasks[i] = tasks[i];
+		std::unique_ptr<Task>* n_tasks = new std::unique_ptr<Task>[capacity*2];
+		for (size_t i = 0; i < size; i++) {
+			n_tasks[i] = std::move(tasks[i]);
 		}
 		capacity *= 2;
 		delete[] tasks;
-		tasks = new_tasks;
-		new_tasks = nullptr;
+		tasks = n_tasks;
 	}
 
 public:
-	TaskManager() : capacity(1), size(0), tasks(new Task*[capacity]) { };
+	TaskManager() : capacity(1), size(0), tasks(new std::unique_ptr<Task>[capacity]) { }
 	TaskManager(size_t n_capacity) {
 		if (n_capacity == 0) {
 			throw std::invalid_argument("Capacity can't be zero");
 		}
 		capacity = n_capacity;
 		size = 0;
-		tasks = new Task*[capacity];
+		tasks = new std::unique_ptr<Task>[capacity];
 	}
 
 	TaskManager& operator=(const TaskManager& other) {
 		if (this != &other) {
-			Task** n_tasks = new Task*[other.capacity];
-			size_t abs_index = 0;
+			std::unique_ptr<Task>* n_tasks = new std::unique_ptr<Task>[other.capacity];
+			
 			try {
-				for (; abs_index < other.size; abs_index++) {
-					n_tasks[abs_index] = other.tasks[abs_index]->clone();
+				for (size_t i = 0; i < other.size; i++) {
+					n_tasks[i] = other.tasks[i]->clone();
 				}
 			}
 			catch (...) {
-				for (size_t i = 0; i < abs_index; i++) {
-					delete n_tasks[i];
-				}
 				delete[] n_tasks;
 				throw;
 			}
-			for (size_t i = 0; i < size; i++){
-					delete tasks[i];
-				}
-			delete[] tasks;
+						
 			size = other.size;
 			capacity = other.capacity;
+			delete[] tasks;
 			tasks = n_tasks;
 		}
 
@@ -174,28 +168,14 @@ public:
 	}
 
 	TaskManager(const TaskManager& other) : capacity(other.capacity), size(other.size) {
-		tasks = new Task*[capacity];
-		size_t abs_index = 0;
-		try {
-			for (; abs_index < size; abs_index++) {
-				tasks[abs_index] = other.tasks[abs_index]->clone();
-			}
-		}
-		catch (...) {
-			for (size_t i = 0; i < abs_index; i++) {
-				delete tasks[i];
-			}
-			delete[] tasks;
-			tasks = nullptr;
-			throw;
+		tasks = new std::unique_ptr<Task>[capacity];
+		
+		for (size_t i = 0; i < size; i++) {
+			tasks[i] = other.tasks[i]->clone();
 		}
 	}
 
 	~TaskManager() {
-		for (size_t i = 0; i < size; i++) {
-			delete tasks[i];
-		}
-
 		delete[] tasks;
 	}
 
@@ -216,7 +196,7 @@ public:
 	}
 
 	void push_back(const Task& n_task) {
-		if (size == capacity){
+		if (size == capacity) {
 			increase_capacity();
 		}
 		tasks[size] = n_task.clone();
@@ -232,7 +212,7 @@ public:
 
 	void whats_expired() const {
 		for (size_t i = 0; i < size; i++) {
-			if(tasks[i]->is_expired()){
+			if (tasks[i]->is_expired()) {
 				std::cout << tasks[i]->to_string() << ' ';
 			}
 		}
@@ -276,13 +256,24 @@ int main() {
 
 	// std::cout << asctime(&tm_recure) << task_with_recure.to_string() << " Is it expired? " << task_with_recure.is_expired() << ' ' << asctime(&tm_lcd);
 
+	SimpleTask task2("Quit");
 	
-	TaskManager tasks(5);
+	TaskManager tasks;
 	tasks.push_back(task);
 	tasks.push_back(task_with_deadline);
 	tasks.push_back(task_with_recure);
 
+	TaskManager tasks2(tasks);
+	tasks2.push_back(task2);
+
 	tasks.println();
+	tasks2.println();
+
+	tasks2 = tasks;
+
+	tasks.println();
+	tasks2.println();
+
 
 	// int* p = new int(10);
 	// std::cout << p[15];
