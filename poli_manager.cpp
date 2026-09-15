@@ -4,6 +4,7 @@
 #include <ctime>
 #include <stdexcept>
 #include <string>
+#include <memory>
 
 class Task {
 protected:
