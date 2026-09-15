@@ -99,19 +99,8 @@ public:
 		std::time_t local_lcd = last_complete_day;
 		std::tm tm_lcd = *std::localtime(&local_lcd);
 
-		// std::time_t local_recure = recure;
-		// std::tm tm_recure = *std::localtime(&local_recure);
-
-		// tm_recure.tm_hour -= 3;
-		// tm_recure.tm_year -= 1970;
-		// tm_recure.tm_mon -= 1;
-		// tm_recure.tm_mday -=1; 
-
 		char buffer_lcd[32];
 		std::strftime(buffer_lcd, sizeof(buffer_lcd), "%d.%m.%Y %H:%M", &tm_lcd);
-
-		// char buffer_recure[32];
-		// std::strftime(buffer_recure, sizeof(buffer_recure), "%d.%m.%Y %H:%M", &tm_recure);
 
 		return "Task: " + text + " Reccuring every " + std::to_string(recure / 86400) + " days And were last complete: " + std::string(buffer_lcd);
 	}
@@ -235,7 +224,7 @@ public:
 
 	void println() const {
 		for (size_t i = 0; i < size; i++) {
-			std::cout << tasks[i]->to_string() << ' ';
+			std::cout << i+1 << ')' << tasks[i]->to_string() << '\n';
 		}
 		std::cout << '\n';
 	}
@@ -259,36 +248,56 @@ public:
 };
 
 int main() {
-	Task* task = new SimpleTask("Work");
+	SimpleTask task("Work");
 
 	std::time_t deadline = std::time(nullptr) + (86400 * 5); //5 days
-	Task* task_with_deadline = new DeadlineTask("Call",deadline);
+	DeadlineTask task_with_deadline("Call",deadline);
 
 	std::time_t recure = 86400 * 7; //week
 	std::time_t last_complete_day = std::time(nullptr) - (86400 * 9);
 	ReccuringTask task_with_recure("Drink", recure, last_complete_day);
 
-	std::cout << "============TESTING SIMPLETASK============\n";
-	std::cout << task->get_text() << ' ' << task->to_string() << '\n';
+	// std::cout << "============TESTING SIMPLETASK============\n";
+	// std::cout << task.get_text() << ' ' << task.to_string() << '\n';
 
 	// std::cout << "============TESTING DEADLINE============\n";
 
-	// std::time_t local_deadline = task_with_deadline->get_deadline();
+	// std::time_t local_deadline = task_with_deadline.get_deadline();
 	// std::tm tm_deadline = *std::localtime(&local_deadline);
 	// std::cout << std::asctime(&tm_deadline) << " Is it expired? " << task_with_deadline.is_expired() << ' ' << task_with_deadline.to_string() << '\n';
 
-	std::cout << "===============TESTING RECURE============\n";
+	// std::cout << "===============TESTING RECURE============\n";
 
-	time_t local_recure = task_with_recure.get_recure();
-	std::tm tm_recure = *std::localtime(&local_recure);
-	time_t local_lcd = task_with_recure.get_last_complete_day();
-	std::tm tm_lcd = *std::localtime(&local_lcd);
+	// time_t local_recure = task_with_recure.get_recure();
+	// std::tm tm_recure = *std::localtime(&local_recure);
+	// time_t local_lcd = task_with_recure.get_last_complete_day();
+	// std::tm tm_lcd = *std::localtime(&local_lcd);
 
-	std::cout << asctime(&tm_recure) << task_with_recure.to_string() << " Is it expired? " << task_with_recure.is_expired() << ' ' << asctime(&tm_lcd);
+	// std::cout << asctime(&tm_recure) << task_with_recure.to_string() << " Is it expired? " << task_with_recure.is_expired() << ' ' << asctime(&tm_lcd);
 
-	// TaskManager tasks;
-	// tasks.push_back(task);
+	
+	TaskManager tasks(5);
+	tasks.push_back(task);
+	tasks.push_back(task_with_deadline);
+	tasks.push_back(task_with_recure);
 
+	tasks.println();
+
+	// int* p = new int(10);
+	// std::cout << p[15];
+
+	// int* p = new int(10);
+	// int* a = p;
+
+	// delete p;
+
+	// std::cout << *p << ' ' << *a << '\n';
+	
+
+	// SimpleTask* task = new SimpleTask("Work");
+	// Task* arr = new Task[3];
+	// arr[0] = *task;
+	// std::cout << arr[0].to_string() << '\n';
 
 	return 0;
 }
