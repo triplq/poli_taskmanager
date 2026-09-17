@@ -144,6 +144,28 @@ public:
 		tasks = new std::unique_ptr<Task>[capacity];
 	}
 
+	TaskManager(TaskManager&& moved) noexcept : capacity(moved.capacity), size(moved.size), tasks(moved.tasks) {
+		moved.tasks = nullptr;
+		moved.capacity = 1;
+		moved.size = 0;
+	}
+
+	TaskManager& operator=(TaskManager&& moved) noexcept {
+		if (this != &moved) {
+			delete[] tasks;
+
+			tasks = moved.tasks;
+			capacity = moved.capacity;
+			size = moved.size;
+
+			moved.tasks = nullptr;
+			moved.capacity = 1;
+			moved.size = 0;
+		}
+
+		return *this;
+	}
+
 	TaskManager& operator=(const TaskManager& other) {
 		if (this != &other) {
 			std::unique_ptr<Task>* n_tasks = new std::unique_ptr<Task>[other.capacity];
