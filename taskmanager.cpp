@@ -1,7 +1,8 @@
 #include "taskmanager.h"
+#include <iostream>
 
 void TaskManager::increase_capacity() {
-	std::unique_ptr<Task>* n_tasks = new std::unique_ptr<Task>[capacity*2];
+	std::unique_ptr<Task>* n_tasks = new std::unique_ptr<Task>[(capacity+1)*2];
 	for (size_t i = 0; i < size; i++) {
 		n_tasks[i] = std::move(tasks[i]);
 	}
@@ -22,7 +23,7 @@ TaskManager::TaskManager(size_t n_capacity) {
 
 TaskManager::TaskManager(TaskManager&& moved) noexcept : capacity(moved.capacity), size(moved.size), tasks(moved.tasks) {
 	moved.tasks = nullptr;
-	moved.capacity = 1;
+	moved.capacity = 0;
 	moved.size = 0;
 }
 
@@ -35,7 +36,7 @@ TaskManager& TaskManager::operator=(TaskManager&& moved) noexcept {
 		size = moved.size;
 
 		moved.tasks = nullptr;
-		moved.capacity = 1;
+		moved.capacity = 0;
 		moved.size = 0;
 	}
 
@@ -68,9 +69,17 @@ TaskManager& TaskManager::operator=(const TaskManager& other) {
 TaskManager::TaskManager(const TaskManager& other) : capacity(other.capacity), size(other.size) {
 	tasks = new std::unique_ptr<Task>[capacity];
 	
-	for (size_t i = 0; i < size; i++) {
-		tasks[i] = other.tasks[i]->clone();
+	try {
+		for (size_t i = 0; i < other.size; i++) {
+			tasks[i] = other.tasks[i]->clone();
+		}
 	}
+	catch (...) {
+		delete[] tasks;
+		tasks = nullptr;
+		throw;
+	}
+
 }
 
 TaskManager::~TaskManager() {

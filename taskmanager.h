@@ -1,10 +1,7 @@
 #pragma once
 
 #include "task.h"
-#include "simpletask.h"
-#include "deadline.h"
-#include "recurring.h"
-#include <iostream>
+#include <memory>
 
 class TaskManager {
 private:

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "task.h"
+#include <stdexcept>
 #include <ctime>
 
 class ReccuringTask : public Task {
