@@ -2,7 +2,13 @@
 #include <iostream>
 
 void TaskManager::increase_capacity() {
-	std::unique_ptr<Task>* n_tasks = new std::unique_ptr<Task>[(capacity+1)*2];
+	if (capacity == 0) {
+		tasks = new std::unique_ptr<Task>[1];
+		capacity = 1;
+		
+		return;
+	}
+	std::unique_ptr<Task>* n_tasks = new std::unique_ptr<Task>[capacity*2];
 	for (size_t i = 0; i < size; i++) {
 		n_tasks[i] = std::move(tasks[i]);
 	}

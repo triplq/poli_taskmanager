@@ -4,13 +4,13 @@
 #include <stdexcept>
 #include <ctime>
 
-class ReccuringTask : public Task {
+class RecurringTask : public Task {
 private:
 	std::time_t recure;
 	std::time_t last_complete_day;
 
 public:
-	ReccuringTask(const std::string& n_text, time_t n_recure, time_t n_last_complete_day) : Task(n_text) {
+	RecurringTask(const std::string& n_text, time_t n_recure, time_t n_last_complete_day) : Task(n_text) {
 		if (n_recure < 86400) {
 			throw std::invalid_argument("Quantity of days can't be zero in reccuring task");
 		}
@@ -37,7 +37,7 @@ public:
 	}
 
 	std::unique_ptr<Task> clone() const override {
-		return std::make_unique<ReccuringTask>(*this);
+		return std::make_unique<RecurringTask>(*this);
 	}
 
 	bool is_expired() const override {

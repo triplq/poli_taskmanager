@@ -2,6 +2,7 @@
 #include "deadline.h"
 #include "recurring.h"
 #include "taskmanager.h"
+#include<iostream>
 
 int main() {
 	SimpleTask task("Work");
@@ -11,7 +12,7 @@ int main() {
 
 	std::time_t recure = 86400 * 7; //week
 	std::time_t last_complete_day = std::time(nullptr) - (86400 * 9);
-	ReccuringTask task_with_recure("Drink", recure, last_complete_day);
+	RecurringTask task_with_recure("Drink", recure, last_complete_day);
 
 	// std::cout << "============TESTING SIMPLETASK============\n";
 	// std::cout << task.get_text() << ' ' << task.to_string() << '\n';
@@ -38,18 +39,17 @@ int main() {
 	tasks.push_back(task_with_deadline);
 	tasks.push_back(task_with_recure);
 
-	TaskManager tasks2(tasks);
-	tasks2.push_back(task2);
+	TaskManager tasks2 = std::move(tasks);
 
-	tasks2.push_back(SimpleTask("hello"));
+	tasks.push_back(SimpleTask("Programming"));
+	tasks.push_back(SimpleTask("Programming"));
+	tasks.push_back(SimpleTask("Programming"));
+	tasks.push_back(SimpleTask("Programming"));
+	tasks.push_back(SimpleTask("Programming"));
 
-	tasks.println();
 	tasks2.println();
-
-	tasks2 = tasks;
-
 	tasks.println();
-	tasks2.println();
+	std::cout << tasks.get_size() << ' ' << tasks.get_capacity() << '\n';
 
 
 	// int* p = new int(10);
